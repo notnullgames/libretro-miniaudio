@@ -10,16 +10,13 @@
 #ifdef __APPLE__
 #define MA_NO_RUNTIME_LINKING
 #endif
+#define MA_NO_DEVICE_IO
 #define MINIAUDIO_IMPLEMENTATION
 #include "miniaudio.h"
 
 static uint32_t* frame_buf;
 static struct retro_log_callback logging;
 static retro_log_printf_t log_cb;
-
-ma_device miniaudio_device;
-
-static unsigned phase;
 
 static void fallback_log(enum retro_log_level level, const char* fmt, ...) {
   (void)level;
@@ -156,25 +153,25 @@ static void render_checkered(void) {
 static void check_variables(void) {
 }
 
-static void render_audio(void) {
-  for (unsigned i = 0; i < 48000 / 60; i++, phase++) {
-    int16_t val = 0x800 * sinf(2.0f * M_PI * phase * 300.0f / 48000.0f);
-    audio_cb(val, val);
-  }
-
-  phase %= 100;
-}
-
-void miniaudio_data_callback(ma_device* pDevice, void* pOutput, const void* pInput, ma_uint32 frameCount) {
-  // In playback mode copy data to pOutput. In capture mode read data from pInput. In full-duplex mode, both
-  // pOutput and pInput will be valid and you can move data from pInput into pOutput. Never process more than
-  // frameCount frames.
-}
+static ma_engine g_engine;
+static ma_sound g_sound;
 
 void retro_run(void) {
   update_input();
   render_checkered();
-  render_audio();
+
+  // TODO: this just makes static
+
+  int bufferSizeInBytes = (48000 / 60) * 2;
+  ma_uint8* pBuffer[bufferSizeInBytes];
+
+  // Reading is just a matter of reading straight from the engine.
+  ma_uint32 bufferSizeInFrames = (ma_uint32)bufferSizeInBytes / ma_get_bytes_per_frame(ma_format_s16, ma_engine_get_channels(&g_engine));
+  ma_engine_read_pcm_frames(&g_engine, pBuffer, bufferSizeInFrames, NULL);
+
+  for (int i = 0; i < bufferSizeInFrames; i += 2) {
+    audio_cb(*(int16_t*)(pBuffer + i), *(int16_t*)(pBuffer + i));
+  }
 
   bool updated = false;
   if (environ_cb(RETRO_ENVIRONMENT_GET_VARIABLE_UPDATE, &updated) && updated) {
@@ -191,25 +188,34 @@ bool retro_load_game(const struct retro_game_info* info) {
 
   check_variables();
 
-  // setup audio
-  ma_device_config config = ma_device_config_init(ma_device_type_playback);
-  config.playback.format = ma_format_f32;         // Set to ma_format_unknown to use the device's native format.
-  config.playback.channels = 1;                   // Set to 0 to use the device's native channel count.
-  config.sampleRate = 48000;                      // Set to 0 to use the device's native sample rate.
-  config.dataCallback = miniaudio_data_callback;  // This function will be called when miniaudio needs more data.
+  ma_result result;
+  ma_engine_config engineConfig = ma_engine_config_init();
 
-  if (ma_device_init(NULL, &config, &miniaudio_device) != MA_SUCCESS) {
-    return false;  // Failed to initialize the device.
+  engineConfig = ma_engine_config_init();
+  engineConfig.noDevice = MA_TRUE;
+  engineConfig.channels = 1;
+  engineConfig.sampleRate = 48000;
+
+  result = ma_engine_init(&engineConfig, &g_engine);
+  if (result != MA_SUCCESS) {
+    log_cb(RETRO_LOG_ERROR, "Failed to initialize audio engine.");
+    return false;
   }
 
-  ma_device_start(&miniaudio_device);
+  result = ma_sound_init_from_file(&g_engine, "amen.wav", 0, NULL, NULL, &g_sound);
+  if (result != MA_SUCCESS) {
+    log_cb(RETRO_LOG_ERROR, "Failed to initialize sound file.");
+    return false;
+  }
+
+  ma_sound_set_looping(&g_sound, MA_TRUE);
+  ma_sound_start(&g_sound);
 
   (void)info;
   return true;
 }
 
 void retro_unload_game(void) {
-  ma_device_uninit(&miniaudio_device);
 }
 
 unsigned retro_get_region(void) {
