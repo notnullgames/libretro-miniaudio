@@ -103,7 +103,13 @@ else
    SHARED := -shared -static-libgcc -static-libstdc++ -s -Wl,--version-script=link.T -Wl,--no-undefined
 endif
 
-LDFLAGS += $(LIBM)
+ifeq ($(platform), osx)
+LDFLAGS += -framework CoreFoundation -framework CoreAudio -framework AudioUnit
+endif
+
+ifeq ($(platform), unix)
+LDFLAGS += -ldl, -lpthread and -lm
+endif
 
 ifeq ($(DEBUG), 1)
    CFLAGS += -O0 -g
