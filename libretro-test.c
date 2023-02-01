@@ -155,25 +155,14 @@ static void check_variables(void) {
 
 static ma_engine g_engine;
 static ma_sound g_sound;
+static ma_uint8* pBuffer[48000 * 2];
 
 void retro_run(void) {
   update_input();
   render_checkered();
 
-  // - audio problem
-
-  int bufferSizeInBytes = (48000 / 60) * 2;
-  ma_uint8* pBuffer[bufferSizeInBytes];
-
-  // Reading is just a matter of reading straight from the engine.
-  ma_uint32 bufferSizeInFrames = (ma_uint32)bufferSizeInBytes / ma_get_bytes_per_frame(ma_format_s16, ma_engine_get_channels(&g_engine));
-  ma_engine_read_pcm_frames(&g_engine, pBuffer, bufferSizeInFrames, NULL);
-
-  for (int i = 0; i < bufferSizeInFrames; i += 2) {
-    audio_cb(*(int16_t*)(pBuffer + i), *(int16_t*)(pBuffer + i));
-  }
-
-  // - /audio problem
+  ma_engine_read_pcm_frames(&g_engine, pBuffer, 48000 / 30, NULL);
+  audio_batch_cb((int16_t*)pBuffer, 48000 / 60);
 
   bool updated = false;
   if (environ_cb(RETRO_ENVIRONMENT_GET_VARIABLE_UPDATE, &updated) && updated) {
@@ -195,7 +184,7 @@ bool retro_load_game(const struct retro_game_info* info) {
 
   engineConfig = ma_engine_config_init();
   engineConfig.noDevice = MA_TRUE;
-  engineConfig.channels = 1;
+  engineConfig.channels = 2;
   engineConfig.sampleRate = 48000;
 
   result = ma_engine_init(&engineConfig, &g_engine);
