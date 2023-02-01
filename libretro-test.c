@@ -160,8 +160,6 @@ void retro_run(void) {
   update_input();
   render_checkered();
 
-  // TODO: this just makes static
-
   // - audio problem
 
   int bufferSizeInBytes = (48000 / 60) * 2;
