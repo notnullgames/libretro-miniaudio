@@ -162,6 +162,8 @@ void retro_run(void) {
 
   // TODO: this just makes static
 
+  // - audio problem
+
   int bufferSizeInBytes = (48000 / 60) * 2;
   ma_uint8* pBuffer[bufferSizeInBytes];
 
@@ -172,6 +174,8 @@ void retro_run(void) {
   for (int i = 0; i < bufferSizeInFrames; i += 2) {
     audio_cb(*(int16_t*)(pBuffer + i), *(int16_t*)(pBuffer + i));
   }
+
+  // - /audio problem
 
   bool updated = false;
   if (environ_cb(RETRO_ENVIRONMENT_GET_VARIABLE_UPDATE, &updated) && updated) {
