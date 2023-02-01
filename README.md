@@ -13,3 +13,16 @@ I am trying to get ot working with [miniaudio](https://miniaud.io/)
 To compile, you will need a C compiler and assorted toolchain installed.
 
 	make
+
+## Running
+
+```
+# mac
+/Applications/RetroArch.app/Contents/MacOS/RetroArch -L testaudio_no_callback_libretro.dylib
+
+# windows
+retroArch -L testaudio_no_callback_libretro.dll
+
+# linux
+retroArch -L testaudio_no_callback_libretro.so
+```
