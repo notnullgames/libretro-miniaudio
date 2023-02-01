@@ -108,7 +108,7 @@ LDFLAGS += -framework CoreFoundation -framework CoreAudio -framework AudioUnit
 endif
 
 ifeq ($(platform), unix)
-LDFLAGS += -ldl, -lpthread and -lm
+LDFLAGS += -ldl -lpthread -lm
 endif
 
 ifeq ($(DEBUG), 1)
