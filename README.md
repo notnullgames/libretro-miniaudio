@@ -1,6 +1,8 @@
 # audio_no_callback
 This sample demonstrates how to generate sound using libretro API with no audio callback.
 
+> Experiment abandoned in favor of [soloud](https://github.com/notnullgames/libretro-soloud)
+
 What this means is that libretro's audio callback function has to be called inside retro_run
 at least once per run.
 
